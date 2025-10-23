@@ -26,7 +26,11 @@ def is_package_available():
         return jsonify({"error": "package_id and package_type are required"}), 400
 
     try:
-        service_url = f"{ENTITY_SERVICE_URL}/{booking_type}_packages"
+        # 1. URL Endpoint Dibangun Secara Dinamis
+        service_url = f"{ENTITY_SERVICE_URL}/{booking_type}_packages?include_unavailable=true"
+        # Jika booking_type='tour'  -> URL menjadi /tour_packages
+        # Jika booking_type='activity' -> URL menjadi /activity_packages
+        # Jika booking_type='rental' -> URL menjadi /rental_packages
         response = requests.get(service_url)
         
         if response.status_code == 200:
@@ -34,11 +38,18 @@ def is_package_available():
             # --- PERBAIKAN KEY ---
             # Cari paket dengan key yang benar (misal: 'tour_packages_id')
             id_key = f"{booking_type}_package_id"
+            # Jika booking_type='tour'  -> id_key menjadi 'tour_packages_id'
+            # Jika booking_type='activity' -> id_key menjadi 'activity_package_id'
+            # Jika booking_type='rental' -> id_key menjadi 'rental_packages_id'
             package = next((p for p in packages if p[id_key] == int(package_id)), None)
             
             if package:
-                print(f"Micro Service: Paket {booking_type} ID {package_id} tersedia.")
-                return jsonify({"available": True, "package": package}), 200
+                if package['is_available']:
+                    print(f"Micro Service: Paket {booking_type} ID {package_id} TERSEDIA.")
+                    return jsonify({"available": True, "package": package}), 200
+                else:
+                    print(f"Micro Service: Paket {booking_type} ID {package_id} TIDAK TERSEDIA.")
+                    return jsonify({"available": False, "message": "Package is not available"}), 200
             else:
                 print(f"Micro Service: Paket {booking_type} ID {package_id} tidak ditemukan.")
                 return jsonify({"available": False, "message": "Package not found"}), 404
