@@ -50,3 +50,7 @@ cd UTS_TOPTEN_SOA_REST
 **Terminal 4 - micro_service**
 - `cd micro_service`
 - `python app.py`
+
+**Terminal 5 - client.py**
+- `cd direktori project`
+- `python client.py`
