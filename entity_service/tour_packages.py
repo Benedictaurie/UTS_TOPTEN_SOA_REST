@@ -1,6 +1,7 @@
 # entity_service/tour_packages.py
 class TourPackage:
-    def __init__(self, tour_packages_id, name, description, price, duration_days, is_available, created_at):
+    def __init__(self, tour_packages_id, name, description, 
+                 price, duration_days, is_available, created_at):
         self.id = tour_packages_id
         self.name = name
         self.description = description

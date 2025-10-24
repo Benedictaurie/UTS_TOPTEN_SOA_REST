@@ -114,7 +114,7 @@ def get_all_activity_packages():
     if conn is None: return jsonify({"error": "Database connection failed"}), 500
     cursor = conn.cursor(dictionary=True)
     try:
-        cursor.execute("SELECT * FROM activity_packages WHERE is_available = TRUE")
+        cursor.execute("SELECT * FROM activity_packages WHERE is_available = TRUE") #paket is_available yg false tdk ditampilkan di halaman main menu client yg lihat paket activity
         packages_data = cursor.fetchall()
         packages = [ActivityPackage(**p).to_dict() for p in packages_data]
         print(f"Entity Service: Mengembalikan {len(packages)} paket activity.")

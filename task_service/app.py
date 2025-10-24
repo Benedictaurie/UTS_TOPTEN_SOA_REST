@@ -33,10 +33,42 @@ def process_booking():
     print(f"Task Service: Data yang diterima: {json.dumps(data, indent=2)}")
     
     # 1. Cek ketersediaan paket via Micro Service (logika sederhana, asumsikan selalu tersedia untuk contoh ini)
-    # Dalam kasus nyata, Anda akan memanggil Micro Service di sini.
-    print("Task Service: (Asumsi) Paket tersedia. Melanjutkan proses.")
+    # Memanggil Micro Service di sini.
+    # print("Task Service: (Asumsi) Paket tersedia. Melanjutkan proses.")
+    try:
+        print(f"Task Service: Mengecek ketersediaan paket via Micro Service...")
+        availability_response = requests.get(
+            f"{MICRO_SERVICE_URL}/is_available",
+            params={
+                'package_id': data['package_id'],
+                'booking_type': data['booking_type']
+            }
+        )
+        
+        if availability_response.status_code == 200:
+            availability_data = availability_response.json()
+            
+            if not availability_data['available']:
+                print(f"Task Service: Paket TIDAK TERSEDIA. Pesan: {availability_data.get('message')}")
+                return jsonify({
+                    "error": "Package not available",
+                    "message": availability_data.get('message')
+                }), 400
+            
+            print("Task Service: ✅ Paket TERSEDIA. Melanjutkan proses booking...")
+            
+        else:
+            print(f"Task Service: Gagal mengecek ketersediaan. Status: {availability_response.status_code}")
+            return jsonify({
+                "error": "Failed to check package availability",
+                "details": availability_response.json().get('error')
+            }), availability_response.status_code
+            
+    except requests.exceptions.RequestException as e:
+        print(f"Task Service: Gagal menghubungi Micro Service. Error: {e}")
+        return jsonify({"error": "Failed to connect to Availability Service"}), 500
 
-    # 2. Buat booking via Entity Service
+    # 2. Buat booking via Entity Service (jika paket tersedia)
     try:
         print(f"Task Service: Mencoba menghubungi Entity Service di {ENTITY_SERVICE_URL}/booking")
         entity_response = requests.post(f"{ENTITY_SERVICE_URL}/booking", json=data)
@@ -50,10 +82,20 @@ def process_booking():
                 "user_id": data['user_id'],
                 "message": f"Booking Anda dengan kode {result.get('booking_code')} telah dibuat dan menunggu konfirmasi."
             }
-            requests.post(f"{UTILITY_SERVICE_URL}/notify", json=notification_data)
             
-            print("Task Service: Proses booking selesai dan notifikasi dikirim.")
-            return jsonify({"message": "Booking processed successfully", "booking_code": result.get('booking_code')}), 201
+            try:
+                requests.post(f"{UTILITY_SERVICE_URL}/notify", json=notification_data)
+                print("Task Service: Notifikasi berhasil dikirim.")
+            except requests.exceptions.RequestException as e:
+                print(f"Task Service: Warning - Gagal mengirim notifikasi: {e}")
+                # Notifikasi gagal, tapi booking tetap sukses
+            
+            print("Task Service: Proses booking selesai.")
+            return jsonify({
+                "message": "Booking processed successfully", 
+                "booking_code": result.get('booking_code')
+            }), 201
+            
         else:
             print(f"Task Service: Gagal membuat booking. Status: {entity_response.status_code}, Respon: {entity_response.text}")
             return jsonify(entity_response.json()), entity_response.status_code
