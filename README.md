@@ -20,7 +20,6 @@
 - python-dotenv
 - mysql-connector-python
 - requests
-- PyJWT
 
 ## 🚀 Instalasi & Konfigurasi
 
